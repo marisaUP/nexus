@@ -24,7 +24,23 @@ export const generateQuery = async (input: string) => {
       select_investors TEXT NOT NULL
     );
 
+        memberships (
+      id SERIAL PRIMARY KEY,
+      user_id INTEGER,
+      email VARCHAR,
+      athlete_name VARCHAR(255),
+      client_name VARCHAR(255),
+      membership VARCHAR(255),
+      membership_category VARCHAR(255),
+      customer_id INTEGER,
+      total_time_as_customer INTEGER,
+      UNIQUE (user_id, membership)
+);
+
     Only retrieval queries are allowed.
+
+        For total time as customer, round to nearest whole number and add in the column title ONLY, add "days" behind it.
+
 
     For things like industry, company names and other string fields, use the ILIKE operator and convert both the search term and the field to lowercase using LOWER() function. For example: LOWER(industry) ILIKE LOWER('%search_term%').
 
@@ -88,7 +104,7 @@ export const runGenerateSQLQuery = async (query: string) => {
   } catch (e: any) {
     if (e.message.includes('relation "unicorns" does not exist')) {
       console.log(
-        "Table does not exist, creating and seeding it with dummy data now...",
+        "Table does not exist, creating and seeding it with dummy data now..."
       );
       // throw error
       throw Error("Table does not exist");
@@ -120,6 +136,19 @@ export const explainQuery = async (input: string, sqlQuery: string) => {
       select_investors TEXT NOT NULL
     );
 
+        memberships (
+      id SERIAL PRIMARY KEY,
+      user_id INTEGER,
+      email VARCHAR,
+      athlete_name VARCHAR(255),
+      client_name VARCHAR(255),
+      membership VARCHAR(255),
+      membership_category VARCHAR(255),
+      customer_id INTEGER,
+      total_time_as_customer INTEGER,
+      UNIQUE (user_id, membership)
+);
+
     When you explain you must take a section of the query, and then explain it. Each "section" should be unique. So in a query like: "SELECT * FROM unicorns limit 20", the sections could be "SELECT *", "FROM UNICORNS", "LIMIT 20".
     If a section doesnt have any explanation, include it, but leave the explanation empty.
 
@@ -141,7 +170,7 @@ export const explainQuery = async (input: string, sqlQuery: string) => {
 
 export const generateChartConfig = async (
   results: Result[],
-  userQuery: string,
+  userQuery: string
 ) => {
   "use server";
   const system = `You are a data visualization expert. `;

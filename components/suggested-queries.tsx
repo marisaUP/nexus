@@ -8,52 +8,26 @@ export const SuggestedQueries = ({
 }) => {
   const suggestionQueries = [
     {
-      desktop: "Compare count of unicorns in SF and NY over time",
-      mobile: "SF vs NY",
+      desktop: "Average total time as a member for each membership",
+      mobile: "Average time as member",
     },
     {
-      desktop: "Compare unicorn valuations in the US vs China over time",
-      mobile: "US vs China",
+      desktop: "Average total time as a member for each membership category",
+      mobile: "Average time as member",
     },
     {
-      desktop: "Countries with highest unicorn density",
-      mobile: "Top countries",
+      desktop: "Top members with the longest total membership duration",
+      mobile: "Top members",
     },
+
     {
-      desktop:
-        "Show the number of unicorns founded each year over the past two decades",
-      mobile: "Yearly count",
+      desktop: "Which memberships have the most subscribers",
+      mobile: "Highest selling memberships",
     },
+
     {
-      desktop: "Display the cumulative total valuation of unicorns over time",
-      mobile: "Total value",
-    },
-    {
-      desktop:
-        "Compare the yearly funding amounts for fintech vs healthtech unicorns",
-      mobile: "Fintech vs health",
-    },
-    {
-      desktop: "Which cities have with most SaaS unicorns",
-      mobile: "SaaS cities",
-    },
-    {
-      desktop: "Show the countries with highest unicorn density",
-      mobile: "Dense nations",
-    },
-    {
-      desktop:
-        "Show the number of unicorns (grouped by year) over the past decade",
-      mobile: "Decade trend",
-    },
-    {
-      desktop:
-        "Compare the average valuation of AI companies vs. biotech companies",
-      mobile: "AI vs biotech",
-    },
-    {
-      desktop: "Investors with the most unicorns",
-      mobile: "Top investors",
+      desktop: "Show the number of members (grouped by membership)",
+      mobile: "Membership trend",
     },
   ];
 

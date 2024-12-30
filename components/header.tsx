@@ -8,12 +8,17 @@ export const Header = ({ handleClear }: { handleClear: () => void }) => {
 
   return (
     <div className="flex items-center justify-between mb-6">
-      <h1
-        className="text-2xl sm:text-3xl font-bold text-foreground flex items-center cursor-pointer"
+      <div
+        className="flex items-center space-x-4 cursor-pointer"
         onClick={() => handleClear()}
       >
-        Natural Language PostgreSQL
-      </h1>
+        {/* Logo */}
+        <img src="/nexus-icon.png" alt="Logo" className="h-8 w-8" />
+        {/* Title */}
+        <h1 className="text-2xl sm:text-3xl font-bold text-foreground flex items-center">
+          NEXUS
+        </h1>
+      </div>
       <div className="flex items-center justify-center space-x-2">
         <Button
           variant="ghost"
@@ -27,9 +32,7 @@ export const Header = ({ handleClear }: { handleClear: () => void }) => {
           )}
           <span className="sr-only">Toggle theme</span>
         </Button>
-        <div className="hidden sm:block">
-          <DeployButton />
-        </div>
+        <div className="hidden sm:block"></div>
       </div>
     </div>
   );
