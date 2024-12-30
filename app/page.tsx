@@ -129,8 +129,8 @@ export default function Page() {
                           <Loader2 className="h-12 w-12 animate-spin text-muted-foreground" />
                           <p className="text-foreground">
                             {loadingStep === 1
-                              ? "Generating SQL query..."
-                              : "Running SQL query..."}
+                              ? "Getting that data..."
+                              : "Just a sec..."}
                           </p>
                         </div>
                       ) : results.length === 0 ? (
@@ -153,6 +153,7 @@ export default function Page() {
             </div>
           </div>
         </motion.div>
+        <ProjectInfo />
       </div>
     </div>
   );

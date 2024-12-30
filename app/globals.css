@@ -1,3 +1,5 @@
+@import url("https://fonts.googleapis.com/css2?family=Satoshi:wght@300;400;500;700&display=swap");
+
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
@@ -7,8 +9,6 @@
   --background-start-rgb: 214, 219, 220;
   --background-end-rgb: 255, 255, 255;
 }
-
-
 
 @layer base {
   :root {
@@ -68,5 +68,5 @@
 }
 
 body {
-    @apply bg-neutral-50 dark:bg-neutral-900;
+  @apply font-sans bg-neutral-50 dark:bg-neutral-900;
 }

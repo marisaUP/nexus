@@ -2,45 +2,183 @@
 
 import { Config, configSchema, explanationsSchema, Result } from "@/lib/types";
 import { openai } from "@ai-sdk/openai";
-import { sql } from "@vercel/postgres";
 import { generateObject } from "ai";
 import { z } from "zod";
+import dotenv from "dotenv";
+import { Pool } from "pg";
+
+dotenv.config();
+
+const pool = new Pool({
+  connectionString: process.env.DATABASE_URL,
+  ssl: {
+    rejectUnauthorized: false, // Required for Heroku's SSL connection
+  },
+});
 
 export const generateQuery = async (input: string) => {
   "use server";
   try {
     const result = await generateObject({
       model: openai("gpt-4o"),
-      system: `You are a SQL (postgres) and data visualization expert. Your job is to help the user write a SQL query to retrieve the data they need. The table schema is as follows:
+      system: `You are a SQL (postgres) and data visualization expert. Your job is to help the user write a SQL query to retrieve the data they need. Ensure all table and column names with uppercase letters are enclosed in double quotes to preserve their case sensitivity. Do not lowercase identifiers. The table schema is as follows:
 
-      unicorns (
-      id SERIAL PRIMARY KEY,
-      company VARCHAR(255) NOT NULL UNIQUE,
-      valuation DECIMAL(10, 2) NOT NULL,
-      date_joined DATE,
-      country VARCHAR(255) NOT NULL,
-      city VARCHAR(255) NOT NULL,
-      industry VARCHAR(255) NOT NULL,
-      select_investors TEXT NOT NULL
-    );
 
-        memberships (
-      id SERIAL PRIMARY KEY,
+
+      membership_details (
       user_id INTEGER,
-      email VARCHAR,
-      athlete_name VARCHAR(255),
+      Email VARCHAR,
+      Athlete Name VARCHAR(255),
       client_name VARCHAR(255),
-      membership VARCHAR(255),
-      membership_category VARCHAR(255),
+      Membership VARCHAR(255),
+      Membership Category VARCHAR(255),
       customer_id INTEGER,
-      total_time_as_customer INTEGER,
-      UNIQUE (user_id, membership)
+      Total Time As Member (days),
+      UNIQUE (user_id, Membership)
 );
+
+
+revenue_report (
+ customer_id     | bigint                      |           |          | 
+ purchased_at    | timestamp without time zone |           |          | 
+ amount          | double precision            |           |          | 
+ discount_amount | double precision            |           |          | 
+ athlete_name    | text                        |           |          | 
+ product_type    | text                        |           |          | 
+ buyer_name      | text                        |           |          | 
+ buyer_email     | text                        |           |          | 
+ product         | text                        |           |          | 
+ source_type     | text 
+);
+
+cancelations (
+  customer_id BIGINT,
+  Business TEXT,
+  Athlete Name TEXT,
+  Client Name TEXT,
+  Email TEXT,
+  Event Type TEXT,
+  Event TEXT,
+  Session Start TIMESTAMP WITHOUT TIME ZONE,
+  Cancelation Executed By Type TEXT,
+  Cancelation Executed By TEXT,
+  Cancellation Time TIMESTAMP WITHOUT TIME ZONE,
+  Date TIMESTAMP WITHOUT TIME ZONE,
+  Cancellation Timing DOUBLE PRECISION,
+  Cancelation Category TEXT,
+  Cancelled Time TEXT,
+  Session Start Time TEXT,
+  price DOUBLE PRECISION,
+  Membership TEXT,
+  Member Status TEXT,
+  Amount Lost DOUBLE PRECISION
+);
+
+clients (
+  created_at TIMESTAMP WITHOUT TIME ZONE,
+  client_id BIGINT,
+  type TEXT,
+  first_name TEXT,
+  last_name TEXT,
+  last_login_at TIMESTAMP WITHOUT TIME ZONE,
+  gender TEXT,
+  age DOUBLE PRECISION,
+  managed_by_status BIGINT,
+  city TEXT,
+  state TEXT,
+  postal_code TEXT,
+  customer TEXT,
+  customer_id BIGINT,
+  time_zone TEXT
+);
+
+events (
+  id BIGINT,
+  description TEXT,
+  title TEXT,
+  price DOUBLE PRECISION,
+  event_type TEXT,
+  created_at TIMESTAMP WITHOUT TIME ZONE,
+  single_session_price DOUBLE PRECISION,
+  sport_type TEXT,
+  seasons TEXT,
+  scheduled_date DATE,
+  customer_id BIGINT
+);
+
+customers (
+  customer_id BIGINT,
+  customer_name TEXT,
+  created_at TIMESTAMP WITHOUT TIME ZONE,
+  time_zone TEXT,
+  business_type TEXT,
+  sports_offered TEXT,
+  city TEXT,
+  state TEXT,
+  postal_code TEXT,
+  number_of_locations BIGINT
+);
+
+noshows (
+  customer_id BIGINT,
+  Business TEXT,
+  Athlete Name TEXT,
+  Client Name TEXT,
+  Email TEXT,
+  Event Type TEXT,
+  Event TEXT,
+  Session Start TIMESTAMP WITHOUT TIME ZONE,
+  Activity Time TIMESTAMP WITHOUT TIME ZONE,
+  Date TIMESTAMP WITHOUT TIME ZONE,
+  Session Start Time TEXT
+);
+
+registrations (
+  staff_status TEXT,
+  starts_at TIMESTAMP WITHOUT TIME ZONE,
+  ends_at TIMESTAMP WITHOUT TIME ZONE,
+  created_at TIMESTAMP WITHOUT TIME ZONE,
+  event TEXT,
+  schedule_type BIGINT,
+  sport_type TEXT,
+  event_type TEXT,
+  client_id BIGINT,
+  staff_id DOUBLE PRECISION,
+  resource_id DOUBLE PRECISION,
+  resource TEXT,
+  customer_id BIGINT,
+  time_zone TEXT
+);
+
+staff_availability_schedule (
+  staff_id BIGINT,
+  customer_id BIGINT,
+  start_date DATE,
+  end_date DATE,
+  created_at TIMESTAMP WITHOUT TIME ZONE,
+  updated_at TIMESTAMP WITHOUT TIME ZONE,
+  date_specific_daytimes TEXT,
+  exclusions TEXT,
+  daytimes TEXT
+);
+
+staff_payroll (
+  Session Payroll DOUBLE PRECISION,
+  Staff Name TEXT,
+  Hourly Payroll DOUBLE PRECISION,
+  customer_id BIGINT,
+  Date TIMESTAMP WITHOUT TIME ZONE,
+  Year DOUBLE PRECISION
+);
+
+
+Exclude rows with NULL in the Total Time As Member (days) column. 
 
     Only retrieval queries are allowed.
 
-        For total time as customer, round to nearest whole number and add in the column title ONLY, add "days" behind it.
+    To handle NULL values in the discount_amount column and treat them as 0 during calculations, use the COALESCE() function. This function replaces NULL values with a specified default, in this case, 0. 
 
+    For total time as customer, round to nearest whole number and add in the column title ONLY, add "days" behind it.
 
     For things like industry, company names and other string fields, use the ILIKE operator and convert both the search term and the field to lowercase using LOWER() function. For example: LOWER(industry) ILIKE LOWER('%search_term%').
 
@@ -64,8 +202,6 @@ export const generateQuery = async (input: string) => {
 
     If the user asks for 'over time' data, return by year.
 
-    When searching for UK or USA, write out United Kingdom or United States respectively.
-
     EVERY QUERY SHOULD RETURN QUANTITATIVE DATA THAT CAN BE PLOTTED ON A CHART! There should always be at least two columns. If the user asks for a single column, return the column and the count of the column. If the user asks for a rate, return the rate as a decimal. For example, 0.1 would be 10%.
     `,
       prompt: `Generate the query necessary to retrieve the data the user wants: ${input}`,
@@ -82,7 +218,8 @@ export const generateQuery = async (input: string) => {
 
 export const runGenerateSQLQuery = async (query: string) => {
   "use server";
-  // Check if the query is a SELECT statement
+
+  // Validate that only SELECT queries are allowed
   if (
     !query.trim().toLowerCase().startsWith("select") ||
     query.trim().toLowerCase().includes("drop") ||
@@ -98,22 +235,30 @@ export const runGenerateSQLQuery = async (query: string) => {
     throw new Error("Only SELECT queries are allowed");
   }
 
-  let data: any;
+  let client;
   try {
-    data = await sql.query(query);
-  } catch (e: any) {
-    if (e.message.includes('relation "unicorns" does not exist')) {
-      console.log(
-        "Table does not exist, creating and seeding it with dummy data now..."
-      );
-      // throw error
-      throw Error("Table does not exist");
-    } else {
-      throw e;
-    }
+    client = await pool.connect(); // Attempt to connect to the database
+  } catch (connectionError: any) {
+    console.error(
+      "Failed to connect to the database:",
+      connectionError.message
+    );
+    throw new Error(
+      "Database connection failed. Please check your database configuration."
+    );
   }
 
-  return data.rows as Result[];
+  try {
+    const data = await client.query(query); // Run the SQL query
+    return data.rows as Result[];
+  } catch (queryError: any) {
+    console.error("Database query failed:", queryError.message);
+    throw new Error(
+      "Failed to execute query. Please check the query syntax and database state."
+    );
+  } finally {
+    client.release(); // Release the client back to the pool
+  }
 };
 
 export const explainQuery = async (input: string, sqlQuery: string) => {
@@ -125,28 +270,151 @@ export const explainQuery = async (input: string, sqlQuery: string) => {
         explanations: explanationsSchema,
       }),
       system: `You are a SQL (postgres) expert. Your job is to explain to the user write a SQL query you wrote to retrieve the data they asked for. The table schema is as follows:
-    unicorns (
-      id SERIAL PRIMARY KEY,
-      company VARCHAR(255) NOT NULL UNIQUE,
-      valuation DECIMAL(10, 2) NOT NULL,
-      date_joined DATE,
-      country VARCHAR(255) NOT NULL,
-      city VARCHAR(255) NOT NULL,
-      industry VARCHAR(255) NOT NULL,
-      select_investors TEXT NOT NULL
-    );
-
-        memberships (
-      id SERIAL PRIMARY KEY,
+   
+      membership_details (
       user_id INTEGER,
-      email VARCHAR,
-      athlete_name VARCHAR(255),
+      Email VARCHAR,
+      Athlete Name VARCHAR(255),
       client_name VARCHAR(255),
-      membership VARCHAR(255),
-      membership_category VARCHAR(255),
+      Membership VARCHAR(255),
+      Membership Category VARCHAR(255),
       customer_id INTEGER,
-      total_time_as_customer INTEGER,
-      UNIQUE (user_id, membership)
+      Total Time As Member (days),
+      UNIQUE (user_id, Membership)
+);
+
+cancelations (
+  customer_id BIGINT,
+  Business TEXT,
+  Athlete Name TEXT,
+  Client Name TEXT,
+  Email TEXT,
+  Event Type TEXT,
+  Event TEXT,
+  Session Start TIMESTAMP WITHOUT TIME ZONE,
+  Cancelation Executed By Type TEXT,
+  Cancelation Executed By TEXT,
+  Cancellation Time TIMESTAMP WITHOUT TIME ZONE,
+  Date TIMESTAMP WITHOUT TIME ZONE,
+  Cancellation Timing DOUBLE PRECISION,
+  Cancelation Category TEXT,
+  Cancelled Time TEXT,
+  Session Start Time TEXT,
+  price DOUBLE PRECISION,
+  Membership TEXT,
+  Member Status TEXT,
+  Amount Lost DOUBLE PRECISION
+);
+
+
+revenue_report (
+  customer_id     | bigint                      |           |          | 
+  purchased_at    | timestamp without time zone |           |          | 
+  amount          | double precision            |           |          | 
+  discount_amount | double precision            |           |          | 
+  athlete_name    | text                        |           |          | 
+  product_type    | text                        |           |          | 
+  buyer_name      | text                        |           |          | 
+  buyer_email     | text                        |           |          | 
+  product         | text                        |           |          | 
+  source_type     | text 
+ );
+
+ clients (
+  created_at TIMESTAMP WITHOUT TIME ZONE,
+  client_id BIGINT,
+  type TEXT,
+  first_name TEXT,
+  last_name TEXT,
+  last_login_at TIMESTAMP WITHOUT TIME ZONE,
+  gender TEXT,
+  age DOUBLE PRECISION,
+  managed_by_status BIGINT,
+  city TEXT,
+  state TEXT,
+  postal_code TEXT,
+  customer TEXT,
+  customer_id BIGINT,
+  time_zone TEXT
+);
+
+events (
+  id BIGINT,
+  description TEXT,
+  title TEXT,
+  price DOUBLE PRECISION,
+  event_type TEXT,
+  created_at TIMESTAMP WITHOUT TIME ZONE,
+  single_session_price DOUBLE PRECISION,
+  sport_type TEXT,
+  seasons TEXT,
+  scheduled_date DATE,
+  customer_id BIGINT
+);
+
+customers (
+  customer_id BIGINT,
+  customer_name TEXT,
+  created_at TIMESTAMP WITHOUT TIME ZONE,
+  time_zone TEXT,
+  business_type TEXT,
+  sports_offered TEXT,
+  city TEXT,
+  state TEXT,
+  postal_code TEXT,
+  number_of_locations BIGINT
+);
+
+noshows (
+  customer_id BIGINT,
+  Business TEXT,
+  Athlete Name TEXT,
+  Client Name TEXT,
+  Email TEXT,
+  Event Type TEXT,
+  Event TEXT,
+  Session Start TIMESTAMP WITHOUT TIME ZONE,
+  Activity Time TIMESTAMP WITHOUT TIME ZONE,
+  Date TIMESTAMP WITHOUT TIME ZONE,
+  Session Start Time TEXT
+);
+
+registrations (
+  staff_status TEXT,
+  starts_at TIMESTAMP WITHOUT TIME ZONE,
+  ends_at TIMESTAMP WITHOUT TIME ZONE,
+  created_at TIMESTAMP WITHOUT TIME ZONE,
+  event TEXT,
+  schedule_type BIGINT,
+  sport_type TEXT,
+  event_type TEXT,
+  client_id BIGINT,
+  staff_id DOUBLE PRECISION,
+  resource_id DOUBLE PRECISION,
+  resource TEXT,
+  customer_id BIGINT,
+  time_zone TEXT
+);
+
+staff_availability_schedule (
+  staff_id BIGINT,
+  customer_id BIGINT,
+  start_date DATE,
+  end_date DATE,
+  created_at TIMESTAMP WITHOUT TIME ZONE,
+  updated_at TIMESTAMP WITHOUT TIME ZONE,
+  date_specific_daytimes TEXT,
+  exclusions TEXT,
+  daytimes TEXT
+);
+
+staff_payroll (
+  Session Payroll DOUBLE PRECISION,
+  Staff Name TEXT,
+  Hourly Payroll DOUBLE PRECISION,
+  customer_id BIGINT,
+  Date TIMESTAMP WITHOUT TIME ZONE,
+  Year DOUBLE PRECISION
 );
 
     When you explain you must take a section of the query, and then explain it. Each "section" should be unique. So in a query like: "SELECT * FROM unicorns limit 20", the sections could be "SELECT *", "FROM UNICORNS", "LIMIT 20".
