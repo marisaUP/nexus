@@ -12,9 +12,7 @@ export const ProjectInfo = () => {
           You can ask questions about the following tables: Revenue Report,
           Cancellations, Clients, Events, Customers, Registrations, Staff
           Availability Schedule, and Staff Payroll.
-          <div className="mt-4 sm:hidden">
-            <DeployButton />
-          </div>
+          <div className="mt-4 sm:hidden"></div>
         </AlertDescription>
       </Alert>
     </div>
